@@ -144,3 +144,84 @@ right join EMP prac
 on prac.mgr=kier.EMPNO
 group by prac.mgr, kier.EMPNO
 order by Liczba
+
+-- podzapytania niepowiązane
+select * from EMP order by SAL
+
+update EMP
+set SAL=800 where EMPNO=7900
+
+-- pokaż ludzi z pensją
+-- równą najbliższej pensji w firmie
+
+select * from EMP where
+SAL=(select MIN(sal) from EMP) or SAL=(select MAX(sal) from EMP)
+order by SAL
+
+select * from EMP where
+SAL in ((select MIN(sal) from EMP), (select MAX(sal) from EMP))
+order by SAL
+
+select * from EMP where
+SAL=(select MIN(sal) from EMP)
+union
+select * from EMP where
+SAL=(select MAX(sal) from EMP)
+order by SAL
+
+-- pokazać ludzi z pensją poniżej średniej pensji w firmie
+select * from emp where
+SAL<(select AVG(sal) from EMP)
+
+-- pokazać ludzi z pensją poniżej średniej pensji z departamentu 20
+select * from emp where
+SAL<(select AVG(sal) from EMP where DEPTNO=20)
+
+-- pokazać ludzi z pensją poniżej średniej pensji z departamentu 30
+-- bez ludzi z departamentu 30
+select * from emp where
+SAL<(select AVG(sal) from EMP where DEPTNO=20) and DEPTNO<>30
+
+-- ludzie z departamentu 30 z pensją poniżej najniższej pensji
+-- z departamentu zlokalizowanego w Dallas
+select * from EMP
+where sal<(select MIN(sal) from EMP e inner join DEPT d on e.DEPTNO=d.DEPTNO
+where LOC='Dallas') and DEPTNO=30
+
+select * from EMP
+where SAL<(select MIN(sal) from emp
+where DEPTNO=(select DEPTNO from DEPT where LOC='Dallas')) and DEPTNO=30
+
+-- ludzie na tym samym stanowisku co Blake, bez Blake'a
+select * from EMP
+where JOB=(select JOB from EMP where ENAME='Blake') and ENAME<>'Blake'
+
+-- pracownicy z pensją pomiędzy pensja Blake-500 i Blake+500
+select * from EMP
+where SAL between (select SAL-500 from EMP where ename='Blake')
+and (select SAL+500 from emp where ENAME='Blake') and ename<>'Blake'
+
+-- pracownicy z pensją wyższą
+-- od maksymalnej pensji z departamentu 30
+select * from EMP
+where SAL>(select MAX(sal) from EMP where deptno=30)
+
+select * from EMP
+where SAL>all(select sal from EMP where deptno=30)
+
+-- pracownicy z pensją wyższą
+-- od minimalnej pensji z departamentu 10
+select * from EMP
+where SAL>(select min(sal) from EMP where deptno=10)
+
+select * from EMP
+where SAL>any(select sal from EMP where deptno=10)
+
+-- stanowisko na którym jest najmniejszy średni zarobek
+select top 1 job, AVG(sal) from emp
+group by JOB
+order by AVG(sal)
+
+select job, AVG(sal) Zarobek from emp
+group by JOB
+having avg(sal)<=all(select AVG(sal) from EMP group by JOB)
